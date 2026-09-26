@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>AeroBaro S26 Altimeter</title>
+  <style>
+    :root {
+      --bg: #07090E;
+      --card: #111827;
+      --border: #1E293B;
+      --cyan: #06B6D4;
+      --amber: #F59E0B;
+      --emerald: #10B981;
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+    }
+    .title { font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+    .badge { font-family: monospace; font-size: 11px; color: var(--emerald); }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 16px; margin-bottom: 14px;
+    }
+    .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+    .val { font-family: monospace; font-size: 28px; font-weight: 700; }
+    .unit { font-size: 12px; color: var(--cyan); font-family: monospace; margin-left: 4px; }
+    .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .dial-wrap { display: flex; justify-content: center; align-items: center; padding: 8px 0; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    input {
+      width: 100%; height: 42px; background: var(--bg); border: 1px solid #334155;
+      border-radius: 10px; color: var(--text); font-family: monospace; font-size: 16px;
+      padding: 0 12px; margin-top: 6px;
+    }
+    button {
+      min-height: 42px; border-radius: 10px; border: 1px solid #334155;
+      background: #1E293B; color: var(--text); font-weight: 600; font-size: 12px;
+      cursor: pointer; padding: 0 12px;
+    }
+    button.primary { background: var(--cyan); color: #07090E; border: none; }
+    button.amber { background: var(--amber); color: #07090E; border: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">AeroBaro S26</div>
+    <div class="badge" id="sensor-status">● S26 BARO ACTIVE</div>
+  </div>
+
+  <div class="card">
+    <div class="readouts">
+      <div>
+        <div class="label">ALTITUDE (FEET)</div>
+        <div><span class="val" id="alt-ft">1,543</span><span class="unit">FT</span></div>
+      </div>
+      <div>
+        <div class="label">ALTITUDE (METERS)</div>
+        <div><span class="val" id="alt-m">470</span><span class="unit">M</span></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:monospace;font-size:12px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);">
+      <span>P: <strong style="color:var(--amber)" id="baro-hpa">958.50</strong> hPa</span>
+      <span>QNH: <strong style="color:var(--cyan)" id="qnh-hpa">1013.25</strong> hPa</span>
+    </div>
+  </div>
+
+  <div class="card dial-wrap">
+    <svg viewBox="0 0 320 320" width="280" height="280">
+      <circle cx="160" cy="160" r="148" fill="#07090E" stroke="#334155" stroke-width="3"/>
+      <g id="ticks"></g>
+      <text x="160" y="102" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="monospace">ALTIMETER · 100 FT</text>
+      <rect x="200" y="142" width="64" height="36" rx="4" fill="#05070B" stroke="#F59E0B" stroke-width="1.5"/>
+      <text x="232" y="154" text-anchor="middle" fill="#F59E0B" font-size="7" font-family="monospace">QNH HPA</text>
+      <text x="232" y="169" text-anchor="middle" fill="#F8FAFC" font-size="11" font-weight="bold" font-family="monospace" id="dial-qnh">1013.3</text>
+      <g id="hand-10000"><line x1="160" y1="160" x2="160" y2="38" stroke="#F59E0B" stroke-width="2"/><polygon points="160,46 153,32 167,32" fill="#F59E0B"/></g>
+      <g id="hand-1000"><path d="M154,160 L150,105 L160,80 L170,105 L166,160 Z" fill="#F8FAFC"/></g>
+      <g id="hand-100"><line x1="160" y1="190" x2="160" y2="42" stroke="#06B6D4" stroke-width="4" stroke-linecap="round"/></g>
+      <circle cx="160" cy="160" r="10" fill="#1E293B" stroke="#F8FAFC" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <div class="card">
+    <div class="label">CALIBRATE BY KNOWN ELEVATION (FT)</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="number" id="input-elev" value="1543" />
+      <button class="primary" style="margin-top:6px;white-space:nowrap;" onclick="calElev()">Set Elevation</button>
+    </div>
+    <div class="label" style="margin-top:12px;">CALIBRATE BY SEA-LEVEL PRESSURE (QNH HPA)</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="number" step="0.01" id="input-qnh" value="1013.25" />
+      <button class="amber" style="margin-top:6px;white-space:nowrap;" onclick="calQnh()">Set QNH</button>
+    </div>
+    <div class="controls">
+      <button onclick="zeroAgl()">ZERO AGL (0 FT)</button>
+      <button onclick="resetStd()">STD 1013.25 hPa</button>
+    </div>
+  </div>
+
+  <script>
+    const ticksG = document.getElementById('ticks');
+    for (let i = 0; i < 50; i++) {
+      const deg = i * 7.2;
+      const rad = (deg - 90) * Math.PI / 180;
+      const major = i % 5 === 0;
+      const r1 = 138, r2 = major ? 120 : 129;
+      const x1 = 160 + r1 * Math.cos(rad), y1 = 160 + r1 * Math.sin(rad);
+      const x2 = 160 + r2 * Math.cos(rad), y2 = 160 + r2 * Math.sin(rad);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', major ? '#F8FAFC' : '#64748B');
+      line.setAttribute('stroke-width', major ? '2.8' : '1.4');
+      ticksG.appendChild(line);
+      if (major) {
+        const tx = 160 + 100 * Math.cos(rad), ty = 160 + 100 * Math.sin(rad);
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', tx); txt.setAttribute('y', ty);
+        txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('dominant-baseline', 'central');
+        txt.setAttribute('fill', '#F8FAFC'); txt.setAttribute('font-size', '20');
+        txt.setAttribute('font-weight', 'bold');
+        txt.textContent = i / 5;
+        ticksG.appendChild(txt);
+      }
+    }
+
+    let ambientHpa = 958.50;
+    let qnhHpa = 1013.25;
+
+    function updateUI() {
+      const altM = 44330 * (1 - Math.pow(ambientHpa / qnhHpa, 1 / 5.255));
+      const altFt = altM * 3.280839895;
+      document.getElementById('alt-ft').textContent = Math.round(altFt).toLocaleString();
+      document.getElementById('alt-m').textContent = Math.round(altM).toLocaleString();
+      document.getElementById('baro-hpa').textContent = ambientHpa.toFixed(2);
+      document.getElementById('qnh-hpa').textContent = qnhHpa.toFixed(2);
+      document.getElementById('dial-qnh').textContent = qnhHpa.toFixed(1);
+      document.getElementById('hand-100').setAttribute('transform', 'rotate(' + ((altFt / 1000) * 360) + ' 160 160)');
+      document.getElementById('hand-1000').setAttribute('transform', 'rotate(' + ((altFt / 10000) * 360) + ' 160 160)');
+      document.getElementById('hand-10000').setAttribute('transform', 'rotate(' + ((altFt / 100000) * 360) + ' 160 160)');
+    }
+
+    function calElev() {
+      const ft = parseFloat(document.getElementById('input-elev').value) || 0;
+      const m = ft / 3.280839895;
+      qnhHpa = ambientHpa / Math.pow(1 - m / 44330, 5.255);
+      document.getElementById('input-qnh').value = qnhHpa.toFixed(2);
+      updateUI();
+    }
+
+    function calQnh() {
+      const val = parseFloat(document.getElementById('input-qnh').value) || 1013.25;
+      qnhHpa = Math.max(850, Math.min(1090, val));
+      updateUI();
+    }
+
+    function zeroAgl() {
+      qnhHpa = ambientHpa;
+      document.getElementById('input-qnh').value = qnhHpa.toFixed(2);
+      updateUI();
+    }
+
+    function resetStd() {
+      qnhHpa = 1013.25;
+      document.getElementById('input-qnh').value = '1013.25';
+      updateUI();
+    }
+
+    window.addEventListener('s26-barometer', (e) => {
+      if (e.detail && typeof e.detail.pressureHpa === 'number') {
+        ambientHpa = e.detail.pressureHpa;
+        document.getElementById('sensor-status').textContent = '● S26 HARDWARE 10HZ';
+        updateUI();
+      }
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>
