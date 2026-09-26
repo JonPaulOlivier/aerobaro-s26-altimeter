@@ -1,0 +1,100 @@
+name: Build Android 16 (Galaxy S26) Barometric Altimeter APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android16-apk:
+    name: Compile Android 16 APK (API 36 · Galaxy S26)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Web Altimeter Assets (if package.json present)
+        run: |
+          if [ -f package.json ]; then
+            npm install
+            npm run build
+            mkdir -p android/app/src/main/assets/public
+            cp -r dist/* android/app/src/main/assets/public/
+          fi
+
+      - name: Setup JDK 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK (API 36 · Android 16)
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK Licenses & Install Build Tools
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Setup Gradle 8.10.2
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Generate Release Signing Keystore for Direct S26 Installation
+        working-directory: ./android/app
+        run: |
+          keytool -genkeypair -v \
+            -keystore aerobaro-release.keystore \
+            -alias aerobaro_s26 \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass aerobaro2026 \
+            -keypass aerobaro2026 \
+            -dname "CN=AeroBaro S26, OU=Avionics, O=AeroBaro, L=Seattle, S=WA, C=US"
+
+      - name: Build Signed Release & Debug APKs
+        working-directory: ./android
+        run: |
+          gradle assembleRelease assembleDebug --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../AeroBaro-S26-Android16.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../AeroBaro-S26-Android16-debug.apk
+
+      - name: Upload Signed APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AeroBaro-S26-Android16-APK
+          path: |
+            AeroBaro-S26-Android16.apk
+            AeroBaro-S26-Android16-debug.apk
+          retention-days: 90
+
+      - name: Publish Direct Download APK to GitHub Releases (Latest)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "AeroBaro S26 Altimeter v1.0.${{ github.run_number }} (Android 16 APK)"
+          body: |
+            ### AeroBaro S26 Barometric Aircraft Altimeter — Android 16 Build
+            - **Target Device**: Samsung Galaxy S26 (`Sensor.TYPE_PRESSURE` 10 Hz Hardware Barometer Bridge)
+            - **Calibration Modes**: Known Elevation (`ft`/`m`), Barometric Pressure (`QNH` in `hPa`/`inHg`), Sensor Trim & GPS METAR Sync
+            - **Direct APK Download**: Download `AeroBaro-S26-Android16.apk` below and open on your Samsung Galaxy S26 to install.
+          files: |
+            AeroBaro-S26-Android16.apk
+            AeroBaro-S26-Android16-debug.apk
+          prerelease: false
+          make_latest: true
