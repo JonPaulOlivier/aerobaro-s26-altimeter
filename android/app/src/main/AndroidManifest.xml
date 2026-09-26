@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.aerobaro.s26">
+
+    <!-- Samsung Galaxy S26 Hardware Barometer & GPS Calibration Permissions -->
+    <uses-feature
+        android:name="android.hardware.sensor.barometer"
+        android:required="false" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:allowBackup="true"
+        android:label="AeroBaro S26"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
